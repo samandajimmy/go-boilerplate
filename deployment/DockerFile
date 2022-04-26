@@ -1,0 +1,1 @@
+FROM artifactory.pegadaian.co.id:8084/golang:1.16.9 as build-env
