@@ -1,16 +1,17 @@
 package main
 
 import (
-	_tokenHttpDelivery "go-boiler-plate/internal/app/domain/token/delivery"
+	_tokenHttpDelivery "go-boiler-plate/internal/app/domain/token/delivery/http"
 	"go-boiler-plate/internal/app/model"
 	"go-boiler-plate/internal/pkg/database"
-	"go-boiler-plate/internal/pkg/logger"
 	"os"
 	"strconv"
 	"time"
 
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 var ech *echo.Echo
@@ -21,7 +22,7 @@ func init() {
 	ech = echo.New()
 	ech.Debug = true
 	loadEnv()
-	logger.Init()
+	pgdlogger.Init("debug")
 }
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 	}
 
 	timeoutContext := time.Duration(contextTimeout) * time.Second
@@ -55,7 +56,7 @@ func main() {
 	// run refresh all token
 	_ = usecases.TokenUseCase.URefreshAllToken()
 
-	database.ServerPort(ech)
+	ech.Start(":" + os.Getenv(`PORT`))
 
 }
 
@@ -68,6 +69,6 @@ func loadEnv() {
 	err := godotenv.Load()
 
 	if err != nil {
-		logger.Make(nil, nil).Fatal("Error loading .env file")
+		pgdlogger.Make().Fatal("Error loading .env file")
 	}
 }

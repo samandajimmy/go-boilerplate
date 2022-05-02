@@ -5,8 +5,9 @@ import (
 	"go-boiler-plate/internal/app/model"
 	"time"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
 )
 
 type tokenUseCase struct {
@@ -101,7 +102,7 @@ func (tkn *tokenUseCase) URefreshAllToken() error {
 }
 
 func verifyToken(accToken *model.AccountToken, password string, isUpdate bool) error {
-	now := model.NowUTC()
+	now := pgdutil.NowUTC()
 	// validate account
 	// check password
 	err := bcrypt.CompareHashAndPassword([]byte(accToken.Password), []byte(password))

@@ -4,13 +4,15 @@ import (
 	"database/sql"
 	"go-boiler-plate/internal/app/domain/token"
 	"go-boiler-plate/internal/app/model"
-	"go-boiler-plate/internal/pkg/logger"
 	"os"
 	"strconv"
 	"time"
 
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
+
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 )
 
@@ -32,7 +34,7 @@ func (m *psqlTokenRepository) RCreate(c echo.Context, accToken *model.AccountTok
 	token, err := createJWTToken(accToken, now, tokenExp)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -47,7 +49,7 @@ func (m *psqlTokenRepository) RCreate(c echo.Context, accToken *model.AccountTok
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -56,7 +58,7 @@ func (m *psqlTokenRepository) RCreate(c echo.Context, accToken *model.AccountTok
 		accToken.ExpireAt, accToken.Status, accToken.CreatedAt).Scan(&lastID)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -79,7 +81,7 @@ func (m *psqlTokenRepository) RGetByUsername(c echo.Context, accToken *model.Acc
 	)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -87,7 +89,7 @@ func (m *psqlTokenRepository) RGetByUsername(c echo.Context, accToken *model.Acc
 	accToken.ExpireAt = &expireAt.Time
 	accToken.CreatedAt = &createdAt.Time
 	accToken.UpdatedAt = &updatedAt.Time
-	accToken.ExpiresAt = time.Duration(accToken.ExpireAt.Sub(model.NowUTC()).Seconds())
+	accToken.ExpiresAt = time.Duration(accToken.ExpireAt.Sub(pgdutil.NowUTC()).Seconds())
 
 	return nil
 }
@@ -99,7 +101,7 @@ func (m *psqlTokenRepository) RUpdateToken(c echo.Context, accToken *model.Accou
 	token, err := createJWTToken(accToken, now, tokenExp)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -108,7 +110,7 @@ func (m *psqlTokenRepository) RUpdateToken(c echo.Context, accToken *model.Accou
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -116,7 +118,7 @@ func (m *psqlTokenRepository) RUpdateToken(c echo.Context, accToken *model.Accou
 	err = stmt.QueryRow(token, tokenExp, now, accToken.Username).Scan(&ID)
 
 	if err != nil {
-		logger.Make(c, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -129,7 +131,7 @@ func (m *psqlTokenRepository) RUpdateAllAccountTokenExpiry() error {
 	stmt, err := m.Conn.Prepare(query)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}
@@ -137,7 +139,7 @@ func (m *psqlTokenRepository) RUpdateAllAccountTokenExpiry() error {
 	_, err = stmt.Query(nil, time.Now())
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 
 		return err
 	}

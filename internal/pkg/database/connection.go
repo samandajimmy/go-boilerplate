@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"go-boiler-plate/internal/app/model"
-	"go-boiler-plate/internal/pkg/logger"
 	"net/http"
 	"os"
 
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+
 	"github.com/go-pg/pg/v9"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func GetDBConn() (*sql.DB, *pg.DB) {
@@ -25,13 +26,13 @@ func GetDBConn() (*sql.DB, *pg.DB) {
 	dbConn, err := sql.Open(`postgres`, connection)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 	}
 
 	err = dbConn.Ping()
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 		os.Exit(1)
 	}
 
@@ -39,14 +40,10 @@ func GetDBConn() (*sql.DB, *pg.DB) {
 	dbOpt, err := pg.ParseURL(connection)
 
 	if err != nil {
-		logger.Make(nil, nil).Debug(err)
+		pgdlogger.Make().Debug(err)
 	}
 
 	dbpg := pg.Connect(dbOpt)
-
-	if os.Getenv(`DB_LOGGER`) == "true" {
-		dbpg.AddQueryHook(logger.DbLogger{})
-	}
 
 	return dbConn, dbpg
 }
@@ -63,9 +60,4 @@ func Ping(echTx echo.Context) error {
 	}
 
 	return echTx.JSON(http.StatusOK, response)
-}
-
-func ServerPort(e *echo.Echo) interface{} {
-	e.Logger.Fatal(e.Start(":" + os.Getenv(`PORT`)))
-	return nil
 }

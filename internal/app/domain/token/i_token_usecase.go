@@ -3,7 +3,7 @@ package token
 import (
 	"go-boiler-plate/internal/app/model"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 type UseCase interface {
