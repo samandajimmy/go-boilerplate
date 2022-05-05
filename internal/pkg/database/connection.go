@@ -3,61 +3,60 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"go-boiler-plate/internal/app/model"
-	"net/http"
 	"os"
 
 	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
 
-	"github.com/go-pg/pg/v9"
-	"github.com/labstack/echo/v4"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
-func GetDBConn() (*sql.DB, *pg.DB) {
+func DbConnection() *sqlx.DB {
 	dbHost := os.Getenv(`DB_HOST`)
 	dbPort := os.Getenv(`DB_PORT`)
 	dbUser := os.Getenv(`DB_USER`)
 	dbPass := os.Getenv(`DB_PASS`)
 	dbName := os.Getenv(`DB_NAME`)
 
-	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
+	postgresUrl := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
 		dbUser, dbPass, dbHost, dbPort, dbName)
 
-	dbConn, err := sql.Open(`postgres`, connection)
+	sqlx, err := sqlx.Connect("postgres", postgresUrl)
 
 	if err != nil {
-		pgdlogger.Make().Debug(err)
+		pgdlogger.Make().Fatal(err)
 	}
 
-	err = dbConn.Ping()
+	err = sqlx.Ping()
 
 	if err != nil {
-		pgdlogger.Make().Debug(err)
-		os.Exit(1)
+		pgdlogger.Make().Fatal(err)
 	}
 
-	// go-pg connection initiation
-	dbOpt, err := pg.ParseURL(connection)
-
-	if err != nil {
-		pgdlogger.Make().Debug(err)
-	}
-
-	dbpg := pg.Connect(dbOpt)
-
-	return dbConn, dbpg
+	return sqlx
 }
 
-func Ping(echTx echo.Context) error {
-	response := model.Response{}
-	response.Status = model.StatusSuccess
-	response.Message = "PONG!!"
-	response.Data = map[string]interface{}{
-		"appSlug":    model.AppSlug,
-		"appName":    model.AppName,
-		"appVersion": model.AppVersion,
-		"appHash":    model.BuildHash,
+func DbMigration(sql *sql.DB) *migrate.Migrate {
+	driver, err := postgres.WithInstance(sql, &postgres.Config{})
+
+	if err != nil {
+		pgdlogger.Make().Debug(err)
 	}
 
-	return echTx.JSON(http.StatusOK, response)
+	migration, err := migrate.NewWithDatabaseInstance(
+		"file://migration/postgres",
+		os.Getenv(`DB_USER`), driver)
+
+	if err != nil {
+		pgdlogger.Make().Debug(err)
+	}
+
+	if err := migration.Up(); err != nil {
+		pgdlogger.Make().Debug(err)
+	}
+
+	return migration
 }

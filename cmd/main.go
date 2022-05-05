@@ -1,17 +1,20 @@
 package main
 
 import (
-	_tokenHttpDelivery "go-boiler-plate/internal/app/domain/token/delivery/http"
-	"go-boiler-plate/internal/app/model"
-	"go-boiler-plate/internal/pkg/database"
+	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+	_tokenHttpDelivery "go-boiler-plate/internal/app/domain/token/delivery/http"
+
+	"go-boiler-plate/internal/app/middleware"
+	"go-boiler-plate/internal/app/model"
+	"go-boiler-plate/internal/pkg/database"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
 )
 
 var ech *echo.Echo
@@ -22,41 +25,38 @@ func init() {
 	ech = echo.New()
 	ech.Debug = true
 	loadEnv()
-	pgdlogger.Init("debug")
+	pgdlogger.Init(os.Getenv(`APP_LOG_LEVEL`))
 }
 
 func main() {
+	sqlx := database.DbConnection()
+	migrate := database.DbMigration(sqlx.DB)
 
-	dbConn, dbpg := database.GetDBConn()
-
-	defer dbConn.Close()
+	defer sqlx.Close()
+	defer migrate.Close()
 
 	echoGroup := model.EchoGroup{
+		Api:   ech.Group("/api"),
 		Token: ech.Group("/token"),
 	}
 
-	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
+	// load all middlewares
+	middleware.InitMiddleware(ech, echoGroup)
 
-	if err != nil {
-		pgdlogger.Make().Debug(err)
-	}
+	repos := newRepositories(sqlx)
 
-	timeoutContext := time.Duration(contextTimeout) * time.Second
+	usecases := newUsecases(repos)
 
-	repos := newRepositories(dbConn, dbpg)
-
-	usecases := newUsecases(repos, timeoutContext)
-
-	_tokenHttpDelivery.NewTokensHandler(echoGroup, usecases.TokenUseCase)
+	_tokenHttpDelivery.NewTokensHandler(echoGroup, usecases.ITokenUseCase)
 
 	// PING
-	ech.GET("/", database.Ping)
-	ech.GET("/ping", database.Ping)
+	ech.GET("/", pingHandler)
+	ech.GET("/ping", pingHandler)
 
 	// run refresh all token
-	_ = usecases.TokenUseCase.URefreshAllToken()
+	_ = usecases.ITokenUseCase.URefreshAllToken()
 
-	ech.Start(":" + os.Getenv(`PORT`))
+	ech.Start(":" + os.Getenv(`APP_PORT`))
 
 }
 
@@ -71,4 +71,19 @@ func loadEnv() {
 	if err != nil {
 		pgdlogger.Make().Fatal("Error loading .env file")
 	}
+}
+
+func pingHandler(echTx echo.Context) error {
+	response := map[string]interface{}{
+		"status":  model.StatusSuccess,
+		"message": "PONG!!",
+		"data": map[string]interface{}{
+			"appSlug":    AppSlug,
+			"appName":    AppName,
+			"appVersion": AppVersion,
+			"appHash":    BuildHash,
+		},
+	}
+
+	return echTx.JSON(http.StatusOK, response)
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Repository interface {
+type ITokenRepository interface {
 	RCreate(c echo.Context, accToken *model.AccountToken) error
 	RGetByUsername(c echo.Context, accToken *model.AccountToken) error
 	RUpdateToken(c echo.Context, accToken *model.AccountToken) error

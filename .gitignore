@@ -1,4 +1,8 @@
 .vscode
 .env
+.env*
 go-boiler-plate
 ./go-boiler-plate
+bin
+vendor
+data/ssl_certificate.crt

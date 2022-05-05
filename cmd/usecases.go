@@ -1,18 +1,18 @@
 package main
 
 import (
+	_tokenUsecase "go-boiler-plate/internal/app/domain/token/usecase"
+
 	"go-boiler-plate/internal/app/domain/token"
-	_tokenUseCase "go-boiler-plate/internal/app/domain/token/usecase"
-	"time"
 )
 
 type Usecases struct {
-	TokenUseCase token.UseCase
+	ITokenUseCase token.ITokenUsecase
 }
 
-func newUsecases(repos Repositories, timeout time.Duration) Usecases {
+func newUsecases(repos Repositories) Usecases {
 
-	tokenUseCase := _tokenUseCase.NewTokenUseCase(repos.TokenRepository, timeout)
+	tokenUseCase := _tokenUsecase.NewTokenUsecase(repos.ITokenRepository)
 
-	return Usecases{TokenUseCase: tokenUseCase}
+	return Usecases{ITokenUseCase: tokenUseCase}
 }

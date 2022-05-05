@@ -3,8 +3,10 @@ package delivery
 import (
 	"go-boiler-plate/internal/app/domain/token"
 	"go-boiler-plate/internal/app/model"
+	"go-boiler-plate/internal/app/payload"
 
 	"github.com/labstack/echo/v4"
+
 	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
 )
 
@@ -13,11 +15,11 @@ var (
 )
 
 type TokenHandler struct {
-	TokenUseCase token.UseCase
+	TokenUseCase token.ITokenUsecase
 }
 
 // NewTokensHandler represent to register tokens endpoint
-func NewTokensHandler(echoGroup model.EchoGroup, tknUseCase token.UseCase) {
+func NewTokensHandler(echoGroup model.EchoGroup, tknUseCase token.ITokenUsecase) {
 	handler := &TokenHandler{
 		TokenUseCase: tknUseCase,
 	}
@@ -36,35 +38,46 @@ func (t *TokenHandler) HCreateToken(c echo.Context) error {
 		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	err = t.TokenUseCase.UCreateToken(c, &pl)
+	response, err := t.TokenUseCase.UCreateToken(c, pl)
 
-	return hCtrl.ShowResponse(c, pl, err, errors)
+	return hCtrl.ShowResponse(c, response, err, errors)
 }
 
 func (t *TokenHandler) HGetToken(c echo.Context) error {
-	var pl model.PayloadToken
+	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
+
+	_ = echo.QueryParamsBinder(c).
+		String("username", &pl.Username).
+		String("password", &pl.Password).
+		BindError()
+
 	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
 		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	accToken, err := t.TokenUseCase.UGetToken(c, pl.UserName, pl.Password)
+	accToken, err := t.TokenUseCase.UGetToken(c, pl.Username, pl.Password)
 
 	return hCtrl.ShowResponse(c, accToken, err, errors)
 }
 
 func (t *TokenHandler) HRefreshToken(c echo.Context) error {
-	var pl model.PayloadToken
+	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
+	_ = echo.QueryParamsBinder(c).
+		String("username", &pl.Username).
+		String("password", &pl.Password).
+		BindError()
+
 	err := hCtrl.Validate(c, &pl)
 
 	if err != nil {
 		return hCtrl.ShowResponse(c, nil, err, errors)
 	}
 
-	accToken, err := t.TokenUseCase.URefreshToken(c, pl.UserName, pl.Password)
+	accToken, err := t.TokenUseCase.URefreshToken(c, pl.Username, pl.Password)
 
 	return hCtrl.ShowResponse(c, accToken, err, errors)
 }

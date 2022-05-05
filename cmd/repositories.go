@@ -1,23 +1,23 @@
 package main
 
 import (
-	"database/sql"
-	"go-boiler-plate/internal/app/domain/token"
 	_tokenRepository "go-boiler-plate/internal/app/domain/token/repository"
 
-	"github.com/go-pg/pg/v9"
+	"go-boiler-plate/internal/app/domain/token"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Repositories struct {
-	TokenRepository token.Repository
+	ITokenRepository token.ITokenRepository
 }
 
-func newRepositories(dbConn *sql.DB, dbBun *pg.DB) Repositories {
+func newRepositories(sqlx *sqlx.DB) Repositories {
 
-	tokenRepository := _tokenRepository.NewPsqlTokenRepository(dbConn)
+	tokenRepository := _tokenRepository.NewPsqlTokenRepository(sqlx)
 
 	return Repositories{
-		TokenRepository: tokenRepository,
+		ITokenRepository: tokenRepository,
 	}
 
 }

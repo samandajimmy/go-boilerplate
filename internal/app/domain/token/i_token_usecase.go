@@ -2,13 +2,14 @@ package token
 
 import (
 	"go-boiler-plate/internal/app/model"
+	"go-boiler-plate/internal/app/payload"
 
 	"github.com/labstack/echo/v4"
 )
 
-type UseCase interface {
-	UCreateToken(c echo.Context, accToken *model.AccountToken) error
-	UGetToken(c echo.Context, username string, password string) (*model.AccountToken, error)
-	URefreshToken(c echo.Context, username string, password string) (*model.AccountToken, error)
+type ITokenUsecase interface {
+	UCreateToken(c echo.Context, accToken model.AccountToken) (payload.TokenResponse, error)
+	UGetToken(c echo.Context, username string, password string) (payload.TokenResponse, error)
+	URefreshToken(c echo.Context, username string, password string) (payload.TokenResponse, error)
 	URefreshAllToken() error
 }

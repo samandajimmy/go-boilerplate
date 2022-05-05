@@ -3,7 +3,7 @@ package usecase
 import (
 	"go-boiler-plate/internal/app/domain/token"
 	"go-boiler-plate/internal/app/model"
-	"time"
+	"go-boiler-plate/internal/app/payload"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -11,31 +11,36 @@ import (
 )
 
 type tokenUseCase struct {
-	tokenRepo      token.Repository
-	contextTimeout time.Duration
+	tokenRepo token.ITokenRepository
 }
 
-// NewTokenUseCase will create new an TokenUseCase object representation of Tokens.UseCase interface
-func NewTokenUseCase(tkn token.Repository, timeout time.Duration) token.UseCase {
+// NewTokenUsecase will create new an TokenUseCase object representation of Tokens.UseCase interface
+func NewTokenUsecase(tkn token.ITokenRepository) token.ITokenUsecase {
 	return &tokenUseCase{
-		tokenRepo:      tkn,
-		contextTimeout: timeout,
+		tokenRepo: tkn,
 	}
 }
 
-func (tkn *tokenUseCase) UCreateToken(c echo.Context, accToken *model.AccountToken) error {
+func (tkn *tokenUseCase) UCreateToken(c echo.Context, accToken model.AccountToken) (payload.TokenResponse, error) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(accToken.Password), bcrypt.DefaultCost)
 	accToken.Password = string(hashedPassword)
-	err := tkn.tokenRepo.RCreate(c, accToken)
+	err := tkn.tokenRepo.RCreate(c, &accToken)
 
 	if err != nil {
-		return model.ErrCreateToken
+		return payload.TokenResponse{}, model.ErrCreateToken
 	}
 
-	return nil
+	return payload.TokenResponse{
+		Username:  accToken.Username,
+		Token:     accToken.Token,
+		Status:    accToken.Status,
+		CreatedAt: accToken.CreatedAt,
+		UpdatedAt: accToken.UpdatedAt,
+		ExpiresIn: accToken.ExpiresIn,
+	}, nil
 }
 
-func (tkn *tokenUseCase) UGetToken(c echo.Context, username string, password string) (*model.AccountToken, error) {
+func (tkn *tokenUseCase) UGetToken(c echo.Context, username string, password string) (payload.TokenResponse, error) {
 	accToken := &model.AccountToken{}
 	accToken.Username = username
 
@@ -43,22 +48,24 @@ func (tkn *tokenUseCase) UGetToken(c echo.Context, username string, password str
 	err := tkn.tokenRepo.RGetByUsername(c, accToken)
 
 	if err != nil {
-		return nil, model.ErrUsername
+		return payload.TokenResponse{}, model.ErrUsername
 	}
 
 	if err = verifyToken(accToken, password, false); err != nil {
-		return nil, err
+		return payload.TokenResponse{}, err
 	}
 
-	// rearrange accountToken
-	accToken.ID = 0
-	accToken.Password = ""
-	accToken.Status = nil
-
-	return accToken, nil
+	return payload.TokenResponse{
+		Username:  accToken.Username,
+		Token:     accToken.Token,
+		Status:    accToken.Status,
+		CreatedAt: accToken.CreatedAt,
+		UpdatedAt: accToken.UpdatedAt,
+		ExpiresIn: accToken.ExpiresIn,
+	}, nil
 }
 
-func (tkn *tokenUseCase) URefreshToken(c echo.Context, username string, password string) (*model.AccountToken, error) {
+func (tkn *tokenUseCase) URefreshToken(c echo.Context, username string, password string) (payload.TokenResponse, error) {
 	accToken := &model.AccountToken{}
 	accToken.Username = username
 
@@ -66,28 +73,34 @@ func (tkn *tokenUseCase) URefreshToken(c echo.Context, username string, password
 	err := tkn.tokenRepo.RGetByUsername(c, accToken)
 
 	if err != nil {
-		return nil, model.ErrUsername
+		return payload.TokenResponse{}, model.ErrUsername
 	}
 
 	if err = verifyToken(accToken, password, true); err != nil {
-		return nil, err
+		return payload.TokenResponse{}, err
 	}
 
 	// refresh JWT
 	err = tkn.tokenRepo.RUpdateToken(c, accToken)
 
 	if err != nil {
-		return nil, model.ErrCreateToken
+		return payload.TokenResponse{}, model.ErrCreateToken
 	}
 
-	_ = tkn.tokenRepo.RGetByUsername(c, accToken)
+	err = tkn.tokenRepo.RGetByUsername(c, accToken)
 
-	// rearrange accountToken
-	accToken.ID = 0
-	accToken.Password = ""
-	accToken.Status = nil
+	if err != nil {
+		return payload.TokenResponse{}, err
+	}
 
-	return accToken, nil
+	return payload.TokenResponse{
+		Username:  accToken.Username,
+		Token:     accToken.Token,
+		Status:    accToken.Status,
+		CreatedAt: accToken.CreatedAt,
+		UpdatedAt: accToken.UpdatedAt,
+		ExpiresIn: accToken.ExpiresIn,
+	}, nil
 }
 
 func (tkn *tokenUseCase) URefreshAllToken() error {
@@ -112,7 +125,7 @@ func verifyToken(accToken *model.AccountToken, password string, isUpdate bool) e
 	}
 
 	// token availabilty
-	if accToken.ExpireAt.Before(now) && !isUpdate {
+	if accToken.ExpiredAt.Time.Before(now) && !isUpdate {
 		return model.ErrTokenExpired
 	}
 
