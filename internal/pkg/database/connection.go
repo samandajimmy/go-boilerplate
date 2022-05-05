@@ -1,28 +1,52 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
+	"reflect"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+	"go-boiler-plate/internal/pkg/msg"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
 )
 
-func DbConnection() *sqlx.DB {
-	dbHost := os.Getenv(`DB_HOST`)
-	dbPort := os.Getenv(`DB_PORT`)
-	dbUser := os.Getenv(`DB_USER`)
-	dbPass := os.Getenv(`DB_PASS`)
-	dbName := os.Getenv(`DB_NAME`)
+type Db struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Name     string
+	Logger   string
+
+	Sqlx *sqlx.DB
+}
+
+func NewDb(dbArgs ...Db) *Db {
+	db := Db{}
+
+	if len(dbArgs) > 0 {
+		db = dbArgs[0]
+	}
+
+	// check if dbConfig empty or not
+	if reflect.DeepEqual(db, Db{}) {
+		db = Db{
+			Host:     os.Getenv(`DB_HOST`),
+			Port:     os.Getenv(`DB_PORT`),
+			Username: os.Getenv(`DB_USER`),
+			Password: os.Getenv(`DB_PASS`),
+			Name:     os.Getenv(`DB_NAME`),
+		}
+	}
 
 	postgresUrl := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
-		dbUser, dbPass, dbHost, dbPort, dbName)
+		db.Username, db.Password, db.Host, db.Port, db.Name)
 
 	sqlx, err := sqlx.Connect("postgres", postgresUrl)
 
@@ -36,26 +60,34 @@ func DbConnection() *sqlx.DB {
 		pgdlogger.Make().Fatal(err)
 	}
 
-	return sqlx
+	db.Sqlx = sqlx
+
+	return &db
 }
 
-func DbMigration(sql *sql.DB) *migrate.Migrate {
-	driver, err := postgres.WithInstance(sql, &postgres.Config{})
+func (db *Db) Migrate() *migrate.Migrate {
+	driver, err := postgres.WithInstance(db.Sqlx.DB, &postgres.Config{})
 
 	if err != nil {
-		pgdlogger.Make().Debug(err)
+		pgdlogger.Make().Fatal(err)
+	}
+
+	migrationPath := "migration/postgres"
+
+	if os.Getenv(`APP_PATH`) != "" {
+		migrationPath = os.Getenv(`APP_PATH`) + "/" + migrationPath
 	}
 
 	migration, err := migrate.NewWithDatabaseInstance(
-		"file://migration/postgres",
-		os.Getenv(`DB_USER`), driver)
+		"file://"+migrationPath,
+		db.Username, driver)
 
 	if err != nil {
-		pgdlogger.Make().Debug(err)
+		pgdlogger.Make().Fatal(err)
 	}
 
-	if err := migration.Up(); err != nil {
-		pgdlogger.Make().Debug(err)
+	if err := migration.Up(); err != nil && err.Error() != msg.ErrMigrateNoChange.Error() {
+		pgdlogger.Make().Fatal(err)
 	}
 
 	return migration

@@ -5,7 +5,8 @@ import (
 	"net/url"
 	"os"
 
-	"go-boiler-plate/internal/app/model"
+	"go-boiler-plate/cmd/router"
+	cmdutil "go-boiler-plate/cmd/util"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -25,22 +26,22 @@ type customMiddleware struct {
 }
 
 var (
-	echGroup  model.EchoGroup
+	echGroup  cmdutil.EchoGroup
 	jwtMiddFn echo.MiddlewareFunc
 )
 
 // InitMiddleware to generate all middleware that app need
-func InitMiddleware(ech *echo.Echo, echoGroup model.EchoGroup) {
+func InitMiddleware(router router.Router) {
 	jwtMiddFn = middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningMethod: "HS512",
 		SigningKey:    []byte(os.Getenv(`APP_JWT_SECRET`)),
 	})
 
-	cm := &customMiddleware{ech}
-	echGroup = echoGroup
-	ech.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
+	cm := &customMiddleware{router.Echo}
+	echGroup = router.EchoGroup
+	router.Echo.Use(middleware.RequestIDWithConfig(middleware.DefaultRequestIDConfig))
 
-	ech.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	router.Echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			pgdlogger.SetRequestId(c.Response().Header().Get(echo.HeaderXRequestID))
 			return next(c)
@@ -49,7 +50,7 @@ func InitMiddleware(ech *echo.Echo, echoGroup model.EchoGroup) {
 
 	cm.customBodyDump()
 
-	ech.Use(middleware.Recover())
+	router.Echo.Use(middleware.Recover())
 	cm.cors()
 	cm.basicAuth()
 	cm.jwtAuth()

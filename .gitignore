@@ -6,3 +6,4 @@ go-boiler-plate
 bin
 vendor
 data/ssl_certificate.crt
+*.out

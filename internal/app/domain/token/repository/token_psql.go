@@ -3,12 +3,14 @@ package repository
 import (
 	"go-boiler-plate/internal/app/domain/token"
 	"go-boiler-plate/internal/app/model"
+	"go-boiler-plate/internal/pkg/database"
+	"go-boiler-plate/internal/pkg/msg"
+
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 
 	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
@@ -16,12 +18,12 @@ import (
 )
 
 type psqlTokenRepository struct {
-	sqlx *sqlx.DB
+	db *database.Db
 }
 
 // NewPsqlTokenRepository will create an object that represent the token.Repository interface
-func NewPsqlTokenRepository(sqlx *sqlx.DB) token.ITokenRepository {
-	return &psqlTokenRepository{sqlx}
+func NewPsqlTokenRepository(db *database.Db) token.ITokenRepository {
+	return &psqlTokenRepository{db}
 }
 
 func (tknRepo *psqlTokenRepository) RCreate(c echo.Context, accToken *model.AccountToken) error {
@@ -40,13 +42,13 @@ func (tknRepo *psqlTokenRepository) RCreate(c echo.Context, accToken *model.Acco
 	accToken.ExpiredAt.Time = tokenExp
 	accToken.CreatedAt = now
 	accToken.UpdatedAt = now
-	accToken.Status = model.DefStatusActive
+	accToken.Status = msg.DefStatusActive
 
 	query := `INSERT INTO account_tokens (username, password, token, expired_at, status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 
-	err = tknRepo.sqlx.QueryRowx(query, accToken.Username, accToken.Password, accToken.Token,
-		accToken.ExpiredAt, accToken.Status, accToken.CreatedAt, accToken.UpdatedAt).Scan(&lastID)
+	err = tknRepo.db.Sqlx.QueryRowx(query, accToken.Username, accToken.Password, accToken.Token,
+		accToken.ExpiredAt.Time, accToken.Status, accToken.CreatedAt, accToken.UpdatedAt).Scan(&lastID)
 
 	if err != nil {
 		pgdlogger.Make().Debug(err)
@@ -64,7 +66,7 @@ func (tknRepo *psqlTokenRepository) RGetByUsername(c echo.Context, accToken *mod
 	query := `SELECT id, username, password, token, expired_at, status, updated_at, created_at
 		FROM account_tokens WHERE status = $1 AND username = $2 limit 1;`
 
-	err := tknRepo.sqlx.QueryRowx(query, model.DefStatusActive, accToken.Username).StructScan(accToken)
+	err := tknRepo.db.Sqlx.QueryRowx(query, msg.DefStatusActive, accToken.Username).StructScan(accToken)
 
 	if err != nil {
 		pgdlogger.Make().Debug(err)
@@ -90,7 +92,7 @@ func (tknRepo *psqlTokenRepository) RUpdateToken(c echo.Context, accToken *model
 	}
 
 	query := `UPDATE account_tokens SET token = $1, expired_at = $2, updated_at = $3 WHERE username = $4 RETURNING id`
-	err = tknRepo.sqlx.QueryRowx(query, token, tokenExp, now, accToken.Username).Scan(&id)
+	err = tknRepo.db.Sqlx.QueryRowx(query, token, tokenExp, now, accToken.Username).Scan(&id)
 
 	if err != nil {
 		pgdlogger.Make().Debug(err)
@@ -103,7 +105,7 @@ func (tknRepo *psqlTokenRepository) RUpdateToken(c echo.Context, accToken *model
 
 func (tknRepo *psqlTokenRepository) RUpdateAllAccountTokenExpiry() error {
 	query := `UPDATE account_tokens SET expired_at = $1, updated_at = $2`
-	_, err := tknRepo.sqlx.Exec(query, nil, time.Now())
+	_, err := tknRepo.db.Sqlx.Exec(query, nil, time.Now())
 
 	if err != nil {
 		pgdlogger.Make().Debug(err)
