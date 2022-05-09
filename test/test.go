@@ -4,8 +4,10 @@ import (
 	"os"
 
 	"go-boiler-plate/internal/pkg/database"
+	"go-boiler-plate/test/mock"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang/mock/gomock"
 )
 
 func NewTestDb() (*database.Db, *migrate.Migrate) {
@@ -22,4 +24,11 @@ func NewTestDb() (*database.Db, *migrate.Migrate) {
 	migrator := db.Migrate()
 
 	return db, migrator
+}
+
+func LoadMockRepoUsecase(mockCtrl *gomock.Controller) (mock.MockRepositories, mock.MockUsecases) {
+	mockRepos := mock.NewMockRepository(mockCtrl)
+	mockUsecase := mock.NewMockUsecases(mockCtrl)
+
+	return mockRepos, mockUsecase
 }

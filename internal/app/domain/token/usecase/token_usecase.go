@@ -5,29 +5,33 @@ import (
 	"go-boiler-plate/internal/app/model"
 	"go-boiler-plate/internal/app/payload"
 	"go-boiler-plate/internal/pkg/msg"
+	"go-boiler-plate/internal/pkg/util"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+
 	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
 )
 
-type tokenUsecase struct {
-	tokenRepo token.ITokenRepository
+type TokenUsecase struct {
+	IUtil      util.IUtil
+	ITokenRepo token.ITokenRepository
 }
 
 // NewTokenUsecase will create new an TokenUsecase object representation of Tokens.Usecase interface
-func NewTokenUsecase(tkn token.ITokenRepository) token.ITokenUsecase {
-	return &tokenUsecase{
-		tokenRepo: tkn,
+func NewTokenUsecase(ITokenRepo token.ITokenRepository) token.ITokenUsecase {
+	return &TokenUsecase{
+		util.NewUtil(),
+		ITokenRepo,
 	}
 }
 
-func (tkn *tokenUsecase) UCreateToken(c echo.Context, pl payload.TokenRequest) (payload.TokenResponse, error) {
+func (tknUc *TokenUsecase) UCreateToken(c echo.Context, pl payload.TokenRequest) (payload.TokenResponse, error) {
 	accToken := model.AccountToken{}
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(pl.Password), bcrypt.DefaultCost)
+	hashedPassword := tknUc.IUtil.BcryptHashedPassword(pl.Password)
 	accToken.Username = pl.Username
-	accToken.Password = string(hashedPassword)
-	err := tkn.tokenRepo.RCreate(c, &accToken)
+	accToken.Password = hashedPassword
+	err := tknUc.ITokenRepo.RCreate(c, &accToken)
 
 	if err != nil {
 		return payload.TokenResponse{}, msg.ErrCreateToken
@@ -43,12 +47,12 @@ func (tkn *tokenUsecase) UCreateToken(c echo.Context, pl payload.TokenRequest) (
 	}, nil
 }
 
-func (tkn *tokenUsecase) UGetToken(c echo.Context, username string, password string) (payload.TokenResponse, error) {
+func (tknUc *TokenUsecase) UGetToken(c echo.Context, username string, password string) (payload.TokenResponse, error) {
 	accToken := &model.AccountToken{}
 	accToken.Username = username
 
 	// get account
-	err := tkn.tokenRepo.RGetByUsername(c, accToken)
+	err := tknUc.ITokenRepo.RGetByUsername(c, accToken)
 
 	if err != nil {
 		return payload.TokenResponse{}, msg.ErrUsername
@@ -68,12 +72,12 @@ func (tkn *tokenUsecase) UGetToken(c echo.Context, username string, password str
 	}, nil
 }
 
-func (tkn *tokenUsecase) URefreshToken(c echo.Context, username string, password string) (payload.TokenResponse, error) {
+func (tknUc *TokenUsecase) URefreshToken(c echo.Context, username string, password string) (payload.TokenResponse, error) {
 	accToken := &model.AccountToken{}
 	accToken.Username = username
 
 	// get account
-	err := tkn.tokenRepo.RGetByUsername(c, accToken)
+	err := tknUc.ITokenRepo.RGetByUsername(c, accToken)
 
 	if err != nil {
 		return payload.TokenResponse{}, msg.ErrUsername
@@ -84,13 +88,13 @@ func (tkn *tokenUsecase) URefreshToken(c echo.Context, username string, password
 	}
 
 	// refresh JWT
-	err = tkn.tokenRepo.RUpdateToken(c, accToken)
+	err = tknUc.ITokenRepo.RUpdateToken(c, accToken)
 
 	if err != nil {
 		return payload.TokenResponse{}, msg.ErrCreateToken
 	}
 
-	err = tkn.tokenRepo.RGetByUsername(c, accToken)
+	err = tknUc.ITokenRepo.RGetByUsername(c, accToken)
 
 	if err != nil {
 		return payload.TokenResponse{}, err
@@ -106,9 +110,9 @@ func (tkn *tokenUsecase) URefreshToken(c echo.Context, username string, password
 	}, nil
 }
 
-func (tkn *tokenUsecase) URefreshAllToken() error {
+func (tknUc *TokenUsecase) URefreshAllToken() error {
 	// update all account token data
-	err := tkn.tokenRepo.RUpdateAllAccountTokenExpiry()
+	err := tknUc.ITokenRepo.RUpdateAllAccountTokenExpiry()
 
 	if err != nil {
 		return err

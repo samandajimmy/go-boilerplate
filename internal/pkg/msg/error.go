@@ -19,10 +19,10 @@ var (
 	ErrCreateToken = errors.New("terjadi kesalaahan saat membuat token")
 
 	// ErrUsername to store username error message
-	ErrUsername = errors.New("username atau Password yang digunakan tidak valid")
+	ErrUsername = errors.New("username atau password yang digunakan tidak valid")
 
 	// ErrPassword to store password error message
-	ErrPassword = errors.New("username atau Password yang digunakan tidak valid")
+	ErrPassword = errors.New("username atau password yang digunakan tidak valid")
 
 	// ErrTokenExpired to store password error message
 	ErrTokenExpired = errors.New("token anda telah kadarluarsa")

@@ -48,7 +48,10 @@ var (
 		expectResp = pgdutil.Response{}
 		e = pgdutil.DummyEcho{}
 		rtr = router.NewRoutes(db)
-		handler.TokenUsecase = rtr.Usecases.ITokenUsecase
+		handler = tokenhttp.TokenHandler{
+			Ihandler:      pgdutil.NewHandler(&pgdutil.Handler{}),
+			ITokenUsecase: rtr.Usecases.ITokenUsecase,
+		}
 	})
 )
 

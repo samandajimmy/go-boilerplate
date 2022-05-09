@@ -10,18 +10,16 @@ import (
 	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
 )
 
-var (
-	hCtrl = pgdutil.NewHandler(&pgdutil.Handler{})
-)
-
 type TokenHandler struct {
-	TokenUsecase token.ITokenUsecase
+	Ihandler      pgdutil.IHandler
+	ITokenUsecase token.ITokenUsecase
 }
 
 // NewTokensHandler represent to register tokens endpoint
-func NewTokensHandler(echoGroup cmdutil.EchoGroup, tknUsecase token.ITokenUsecase) {
+func NewTokensHandler(echoGroup cmdutil.EchoGroup, iTknUsecase token.ITokenUsecase) {
 	handler := &TokenHandler{
-		TokenUsecase: tknUsecase,
+		Ihandler:      pgdutil.NewHandler(&pgdutil.Handler{}),
+		ITokenUsecase: iTknUsecase,
 	}
 
 	echoGroup.Token.POST("/create", handler.HCreateToken)
@@ -29,21 +27,21 @@ func NewTokensHandler(echoGroup cmdutil.EchoGroup, tknUsecase token.ITokenUsecas
 	echoGroup.Token.GET("/refresh", handler.HRefreshToken)
 }
 
-func (t *TokenHandler) HCreateToken(c echo.Context) error {
+func (th *TokenHandler) HCreateToken(c echo.Context) error {
 	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
-	err := hCtrl.Validate(c, &pl)
+	err := th.Ihandler.Validate(c, &pl)
 
 	if err != nil {
-		return hCtrl.ShowResponse(c, nil, err, errors)
+		return th.Ihandler.ShowResponse(c, nil, err, errors)
 	}
 
-	response, err := t.TokenUsecase.UCreateToken(c, pl)
+	response, err := th.ITokenUsecase.UCreateToken(c, pl)
 
-	return hCtrl.ShowResponse(c, response, err, errors)
+	return th.Ihandler.ShowResponse(c, response, err, errors)
 }
 
-func (t *TokenHandler) HGetToken(c echo.Context) error {
+func (th *TokenHandler) HGetToken(c echo.Context) error {
 	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
 
@@ -52,18 +50,18 @@ func (t *TokenHandler) HGetToken(c echo.Context) error {
 		String("password", &pl.Password).
 		BindError()
 
-	err := hCtrl.Validate(c, &pl)
+	err := th.Ihandler.Validate(c, &pl)
 
 	if err != nil {
-		return hCtrl.ShowResponse(c, nil, err, errors)
+		return th.Ihandler.ShowResponse(c, nil, err, errors)
 	}
 
-	accToken, err := t.TokenUsecase.UGetToken(c, pl.Username, pl.Password)
+	accToken, err := th.ITokenUsecase.UGetToken(c, pl.Username, pl.Password)
 
-	return hCtrl.ShowResponse(c, accToken, err, errors)
+	return th.Ihandler.ShowResponse(c, accToken, err, errors)
 }
 
-func (t *TokenHandler) HRefreshToken(c echo.Context) error {
+func (th *TokenHandler) HRefreshToken(c echo.Context) error {
 	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
 	_ = echo.QueryParamsBinder(c).
@@ -71,13 +69,13 @@ func (t *TokenHandler) HRefreshToken(c echo.Context) error {
 		String("password", &pl.Password).
 		BindError()
 
-	err := hCtrl.Validate(c, &pl)
+	err := th.Ihandler.Validate(c, &pl)
 
 	if err != nil {
-		return hCtrl.ShowResponse(c, nil, err, errors)
+		return th.Ihandler.ShowResponse(c, nil, err, errors)
 	}
 
-	accToken, err := t.TokenUsecase.URefreshToken(c, pl.Username, pl.Password)
+	accToken, err := th.ITokenUsecase.URefreshToken(c, pl.Username, pl.Password)
 
-	return hCtrl.ShowResponse(c, accToken, err, errors)
+	return th.Ihandler.ShowResponse(c, accToken, err, errors)
 }
