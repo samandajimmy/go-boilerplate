@@ -1,73 +1,64 @@
 package main
 
 import (
-	_tokenHttpDelivery "go-boiler-plate/internal/app/domain/token/delivery"
-	"go-boiler-plate/internal/app/model"
-	"go-boiler-plate/internal/pkg/database"
-	"go-boiler-plate/internal/pkg/logger"
+	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo"
-)
+	"go-boiler-plate/cmd/router"
+	cmdutil "go-boiler-plate/cmd/util"
+	"go-boiler-plate/internal/app/middleware"
+	"go-boiler-plate/internal/pkg/database"
+	"go-boiler-plate/internal/pkg/msg"
 
-var ech *echo.Echo
+	"github.com/labstack/echo/v4"
+
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+)
 
 func init() {
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	time.Local = loc
-	ech = echo.New()
-	ech.Debug = true
-	loadEnv()
-	logger.Init()
+	cmdutil.LoadEnv()
+	pgdlogger.Init(os.Getenv(`APP_LOG_LEVEL`))
 }
 
 func main() {
+	db := database.NewDb()
+	migration := db.Migrate()
 
-	dbConn, dbpg := database.GetDBConn()
+	defer db.Sqlx.Close()
+	defer migration.Close()
 
-	defer dbConn.Close()
+	router := router.NewRoutes(db)
 
-	echoGroup := model.EchoGroup{
-		Token: ech.Group("/token"),
-	}
-
-	contextTimeout, err := strconv.Atoi(os.Getenv(`CONTEXT_TIMEOUT`))
-
-	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-	}
-
-	timeoutContext := time.Duration(contextTimeout) * time.Second
-
-	repos := newRepositories(dbConn, dbpg)
-
-	usecases := newUsecases(repos, timeoutContext)
-
-	_tokenHttpDelivery.NewTokensHandler(echoGroup, usecases.TokenUseCase)
+	// load all middlewares
+	middleware.InitMiddleware(router)
+	// load all handlers
+	router.LoadHandlers()
 
 	// PING
-	ech.GET("/", database.Ping)
-	ech.GET("/ping", database.Ping)
+	router.Echo.GET("/", pingHandler)
+	router.Echo.GET("/ping", pingHandler)
 
 	// run refresh all token
-	_ = usecases.TokenUseCase.URefreshAllToken()
+	_ = router.Usecases.ITokenUsecase.URefreshAllToken()
 
-	database.ServerPort(ech)
+	router.Echo.Start(":" + os.Getenv(`APP_PORT`))
 
 }
 
-func loadEnv() {
-	// check .env file existence
-	if _, err := os.Stat(".env"); os.IsNotExist(err) {
-		return
+func pingHandler(echTx echo.Context) error {
+	response := map[string]interface{}{
+		"status":  msg.StatusSuccess,
+		"message": "PONG!!",
+		"data": map[string]interface{}{
+			"appSlug":    AppSlug,
+			"appName":    AppName,
+			"appVersion": AppVersion,
+			"appHash":    BuildHash,
+		},
 	}
 
-	err := godotenv.Load()
-
-	if err != nil {
-		logger.Make(nil, nil).Fatal("Error loading .env file")
-	}
+	return echTx.JSON(http.StatusOK, response)
 }

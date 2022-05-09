@@ -1,71 +1,94 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
-	"go-boiler-plate/internal/app/model"
-	"go-boiler-plate/internal/pkg/logger"
-	"net/http"
 	"os"
+	"reflect"
 
-	"github.com/go-pg/pg/v9"
-	"github.com/labstack/echo"
+	"go-boiler-plate/internal/pkg/msg"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+
+	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
 )
 
-func GetDBConn() (*sql.DB, *pg.DB) {
-	dbHost := os.Getenv(`DB_HOST`)
-	dbPort := os.Getenv(`DB_PORT`)
-	dbUser := os.Getenv(`DB_USER`)
-	dbPass := os.Getenv(`DB_PASS`)
-	dbName := os.Getenv(`DB_NAME`)
+type Db struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Name     string
+	Logger   string
 
-	connection := fmt.Sprintf("postgres://%s%s@%s%s/%s?sslmode=disable",
-		dbUser, dbPass, dbHost, dbPort, dbName)
-
-	dbConn, err := sql.Open(`postgres`, connection)
-
-	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-	}
-
-	err = dbConn.Ping()
-
-	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-		os.Exit(1)
-	}
-
-	// go-pg connection initiation
-	dbOpt, err := pg.ParseURL(connection)
-
-	if err != nil {
-		logger.Make(nil, nil).Debug(err)
-	}
-
-	dbpg := pg.Connect(dbOpt)
-
-	if os.Getenv(`DB_LOGGER`) == "true" {
-		dbpg.AddQueryHook(logger.DbLogger{})
-	}
-
-	return dbConn, dbpg
+	Sqlx *sqlx.DB
 }
 
-func Ping(echTx echo.Context) error {
-	response := model.Response{}
-	response.Status = model.StatusSuccess
-	response.Message = "PONG!!"
-	response.Data = map[string]interface{}{
-		"appSlug":    model.AppSlug,
-		"appName":    model.AppName,
-		"appVersion": model.AppVersion,
-		"appHash":    model.BuildHash,
+func NewDb(dbArgs ...Db) *Db {
+	db := Db{}
+
+	if len(dbArgs) > 0 {
+		db = dbArgs[0]
 	}
 
-	return echTx.JSON(http.StatusOK, response)
+	// check if dbConfig empty or not
+	if reflect.DeepEqual(db, Db{}) {
+		db = Db{
+			Host:     os.Getenv(`DB_HOST`),
+			Port:     os.Getenv(`DB_PORT`),
+			Username: os.Getenv(`DB_USER`),
+			Password: os.Getenv(`DB_PASS`),
+			Name:     os.Getenv(`DB_NAME`),
+		}
+	}
+
+	postgresUrl := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
+		db.Username, db.Password, db.Host, db.Port, db.Name)
+
+	sqlx, err := sqlx.Connect("postgres", postgresUrl)
+
+	if err != nil {
+		pgdlogger.Make().Fatal(err)
+	}
+
+	err = sqlx.Ping()
+
+	if err != nil {
+		pgdlogger.Make().Fatal(err)
+	}
+
+	db.Sqlx = sqlx
+
+	return &db
 }
 
-func ServerPort(e *echo.Echo) interface{} {
-	e.Logger.Fatal(e.Start(":" + os.Getenv(`PORT`)))
-	return nil
+func (db *Db) Migrate() *migrate.Migrate {
+	driver, err := postgres.WithInstance(db.Sqlx.DB, &postgres.Config{})
+
+	if err != nil {
+		pgdlogger.Make().Fatal(err)
+	}
+
+	migrationPath := "migration/postgres"
+
+	if os.Getenv(`APP_PATH`) != "" {
+		migrationPath = os.Getenv(`APP_PATH`) + "/" + migrationPath
+	}
+
+	migration, err := migrate.NewWithDatabaseInstance(
+		"file://"+migrationPath,
+		db.Username, driver)
+
+	if err != nil {
+		pgdlogger.Make().Fatal(err)
+	}
+
+	if err := migration.Up(); err != nil && err.Error() != msg.ErrMigrateNoChange.Error() {
+		pgdlogger.Make().Fatal(err)
+	}
+
+	return migration
 }

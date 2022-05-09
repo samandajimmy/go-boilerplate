@@ -3,10 +3,10 @@ package token
 import (
 	"go-boiler-plate/internal/app/model"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
-type Repository interface {
+type ITokenRepository interface {
 	RCreate(c echo.Context, accToken *model.AccountToken) error
 	RGetByUsername(c echo.Context, accToken *model.AccountToken) error
 	RUpdateToken(c echo.Context, accToken *model.AccountToken) error
