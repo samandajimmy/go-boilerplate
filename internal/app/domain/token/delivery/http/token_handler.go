@@ -27,6 +27,16 @@ func NewTokensHandler(echoGroup cmdutil.EchoGroup, iTknUsecase token.ITokenUseca
 	echoGroup.Token.GET("/refresh", handler.HRefreshToken)
 }
 
+// Create Token example
+// @Summary Add a new access token
+// @Description Adding a new access token
+// @ID token/create
+// @Tags    Token
+// @Accept  json
+// @Produce  json
+// @Param token body payload.TokenRequest true "Create token"
+// @Success 200 {object} payload.TokenResponse
+// @Router /token/create [post]
 func (th *TokenHandler) HCreateToken(c echo.Context) error {
 	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
@@ -41,6 +51,16 @@ func (th *TokenHandler) HCreateToken(c echo.Context) error {
 	return th.Ihandler.ShowResponse(c, response, err, errors)
 }
 
+// Get Token example
+// @Summary get access token
+// @Description Getting access token
+// @ID token/get
+// @Tags    Token
+// @Accept  json
+// @Produce  json
+// @Param token query payload.TokenRequest true "Get token"
+// @Success 200 {object} payload.TokenResponse
+// @Router /token/get [get]
 func (th *TokenHandler) HGetToken(c echo.Context) error {
 	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors
@@ -61,6 +81,16 @@ func (th *TokenHandler) HGetToken(c echo.Context) error {
 	return th.Ihandler.ShowResponse(c, accToken, err, errors)
 }
 
+// Refresh Token example
+// @Summary refresh access token
+// @Description Refresh access token
+// @ID tokenrefresh
+// @Tags    Token
+// @Accept  json
+// @Produce  json
+// @Param token query payload.TokenRequest true "Refresh token"
+// @Success 200 {object} payload.TokenResponse
+// @Router /token/refresh [get]
 func (th *TokenHandler) HRefreshToken(c echo.Context) error {
 	var pl payload.TokenRequest
 	var errors pgdutil.ResponseErrors

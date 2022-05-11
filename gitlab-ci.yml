@@ -1,0 +1,74 @@
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_AUTH_CONFIG: '{"auths": {"artifactory.pegadaian.co.id:8084": {"auth": "$DOCKER_AU_CONFIG"},"artifactory.pegadaian.co.id:5443": {"auth": "$DOCKER_AU_CONFIG"}}}'
+  IMAGE_URL: artifactory.pegadaian.co.id:5443/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG
+  OPENSHIFT_REGION: sby
+  OPENSHIFT_OC_URL: https://api.ocp-$OPENSHIFT_REGION.pegadaian.co.id:6443
+
+  before_script:
+    - touch latest_commit_hash
+    - echo $CI_COMMIT_SHA > latest_commit_hash
+    - echo $CI_COMMIT_TIMESTAMP >> latest_commit_hash
+
+lint:
+  image:
+    name: artifactory.pegadaian.co.id:8084/golangci/golangci-lint:v1.42.1
+    entrypoint: [""]
+  stage: lint
+  before_script:
+    - *inject-gopath
+  script:
+    - go mod download
+    - golangci-lint run
+  only:
+    - merge_requests
+
+test:
+  stage: test
+  image: artifactory.pegadaian.co.id:8084/docker/compose:1.29.2
+  services:
+    - artifactory.pegadaian.co.id:8084/docker:dind
+  script:
+    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/data/ssl_certificate.crt
+    - cp ${APP_ENV} .env.test && cp ${APP_ENV} .env
+    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
+    - docker-compose build test_app
+    - docker-compose up test_app
+    - export TEST_STATUS=$(docker inspect test_app --format='{{.State.ExitCode}}')
+    - eval "[[ "$TEST_STATUS" == "1" ]] && exit 1 || exit 0"
+  only:
+    - merge_requests
+
+build:
+  stage: build
+  image: artifactory.pegadaian.co.id:8084/docker:latest
+  services:
+    - name: artifactory.pegadaian.co.id:8084/docker:dind
+      command: [ "--insecure-registry=artifactory.pegadaian.co.id:8084" ]
+  script:
+    # Copy secret files
+    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/data/ssl_certificate.crt
+    # Compile and Build Image
+    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
+    - docker build -t ${IMAGE_URL} --progress plain -f ${CI_PROJECT_DIR}/deployment/Dockerfile .
+    # Push image
+    - echo "  > Push image to Container Registry..."
+    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS artifactory.pegadaian.co.id:5443
+    - docker push $IMAGE_URL
+    - echo "  > Done..."
+  only:
+    - master
+
+deploy_dev:
+  image: artifactory.pegadaian.co.id:8084/tj/openshift-client:latest
+  stage: deploy
+  script:
+    - while true; do result=0; oc login -u $OC_USER -p $OC_PASS --server=$OPENSHIFT_OC_URL --insecure-skip-tls-verify || result=$?; tj=$((tj+1)); if [ $result -eq 0 ]; then break; elif [ $tj -gt 5 ]; then exit 1; fi; echo "retry $tj";done;
+    - oc rollout latest dc/srv-customer
+  only:
+    - master
