@@ -10,11 +10,6 @@ variables:
   OPENSHIFT_REGION: sby
   OPENSHIFT_OC_URL: https://api.ocp-$OPENSHIFT_REGION.pegadaian.co.id:6443
 
-  before_script:
-    - touch latest_commit_hash
-    - echo $CI_COMMIT_SHA > latest_commit_hash
-    - echo $CI_COMMIT_TIMESTAMP >> latest_commit_hash
-
 lint:
   image:
     name: artifactory.pegadaian.co.id:8084/golangci/golangci-lint:v1.42.1
