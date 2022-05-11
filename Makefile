@@ -137,6 +137,12 @@ configure: go.mod
 ## serve: Run server in development mode
 .PHONY: serve
 serve: --dev-build ${DEBUG_ENV_FILES}
+	@-echo "  > Starting Server...\n"
+	@LOG_LEVEL=debug;LOG_FORMAT=console; ${DEBUG_BIN} -dir=${PROJECT_ROOT} -load-env-file
+
+## serve-with-doc: Run server in development mode with the swagger doc
+.PHONY: serve-with-doc
+serve-with-doc: --dev-build ${DEBUG_ENV_FILES}
 	@-echo "  > Generate API Documentation...\n"
 	@swag init -d ./cmd,./ --parseInternal --pd
 	@-echo "  > Starting Server...\n"

@@ -10,7 +10,7 @@ import (
 // Token to store JWT token data
 type Token struct {
 	Name   string `json:"name"`
-	Claims jwt.StandardClaims
+	Claims jwt.RegisteredClaims
 }
 
 // AccountToken to store account token data
