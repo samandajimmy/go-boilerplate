@@ -48,7 +48,11 @@ func main() {
 	_ = router.Usecases.ITokenUsecase.URefreshAllToken()
 
 	router.Echo.GET("/swagger/*", documentation())
-	router.Echo.Start(":" + os.Getenv(`APP_PORT`))
+	err := router.Echo.Start(":" + os.Getenv(`APP_PORT`))
+
+	if err != nil {
+		pgdlogger.Make().Fatal(err)
+	}
 
 }
 

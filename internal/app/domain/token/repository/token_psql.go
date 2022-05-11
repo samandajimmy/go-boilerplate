@@ -123,9 +123,11 @@ func stringToDuration(str string) time.Duration {
 }
 
 func createJWTToken(accountToken *model.AccountToken, now time.Time, tokenExp time.Time) (string, error) {
+	// nolint
+	jwtDate := &jwt.NumericDate{tokenExp}
 	token := model.Token{
 		Name:   accountToken.Username,
-		Claims: jwt.StandardClaims{Id: accountToken.Username, ExpiresAt: tokenExp.Unix()},
+		Claims: jwt.RegisteredClaims{ID: accountToken.Username, ExpiresAt: jwtDate},
 	}
 
 	rawToken := jwt.NewWithClaims(jwt.SigningMethodHS512, token.Claims)

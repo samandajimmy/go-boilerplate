@@ -111,7 +111,7 @@ const docTemplate = `{
                     "Token"
                 ],
                 "summary": "refresh access token",
-                "operationId": "token_refresh",
+                "operationId": "tokenrefresh",
                 "parameters": [
                     {
                         "type": "string",
