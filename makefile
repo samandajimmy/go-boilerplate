@@ -34,6 +34,7 @@ GO_BUILD:=${GO_CMD} build
 GO_MOD:=${GO_CMD} mod
 GO_CLEAN:=${GO_CMD} clean
 GO_GET:=${GO_CMD} get
+GO_INSTALL:=${GO_CMD} install
 DOCKER_CMD:=docker
 
 # ----------------------
@@ -125,11 +126,19 @@ setup:
 configure: go.mod
 	@-echo "  > Downloading dependencies..."
 	@${GO_MOD} download
+	@-echo "  > Downloading ginkgo..."
+	@${GO_INSTALL} github.com/onsi/ginkgo/v2
+	@-echo "  > Downloading swag..."
+	@${GO_INSTALL} github.com/swaggo/swag/cmd/swag@latest
+	@-echo "  > Downloading mockgen..."
+	@${GO_INSTALL} github.com/golang/mock/mockgen@v1.6.0
 	@-echo "  > Done"
 
 ## serve: Run server in development mode
 .PHONY: serve
 serve: --dev-build ${DEBUG_ENV_FILES}
+	@-echo "  > Generate API Documentation...\n"
+	@swag init -d ./cmd,./ --parseInternal --pd
 	@-echo "  > Starting Server...\n"
 	@LOG_LEVEL=debug;LOG_FORMAT=console; ${DEBUG_BIN} -dir=${PROJECT_ROOT} -load-env-file
 

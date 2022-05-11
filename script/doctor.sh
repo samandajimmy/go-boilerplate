@@ -6,7 +6,10 @@ main() {
   # Check Programming Runtimes
   check_cmd "go"
   check_cmd "python3"
-  check_cmd "migrates" "golang-migrate"
+  check_cmd "migrate" "golang-migrate"
+  check_cmd "ginkgo"
+  check_cmd "swag"
+  check_cmd "mockgen"
   check_optional_cmd "brew"
   check_optional_cmd "docker"
 
