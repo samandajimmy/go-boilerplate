@@ -126,13 +126,52 @@ setup:
 configure: go.mod
 	@-echo "  > Downloading dependencies..."
 	@${GO_MOD} download
-	@-echo "  > Downloading ginkgo..."
-	@${GO_INSTALL} github.com/onsi/ginkgo/v2
+	@-echo "  > Done"
+
+## configure-swag: Configure install swag app
+.PHONY: configure-swag
+configure-swag:
 	@-echo "  > Downloading swag..."
 	@${GO_INSTALL} github.com/swaggo/swag/cmd/swag@latest
+	@-echo "  > Done"
+
+## configure-ginkgo: Configure install ginkgo app
+.PHONY: configure-ginkgo
+configure-ginkgo:
+	@-echo "  > Downloading ginkgo..."
+	@${GO_INSTALL} github.com/onsi/ginkgo/v2/ginkgo@v2.1.3
+	@-echo "  > Done"
+
+## configure-mockgen: Configure install mockgen app
+.PHONY: configure-mockgen
+configure-mockgen:
 	@-echo "  > Downloading mockgen..."
 	@${GO_INSTALL} github.com/golang/mock/mockgen@v1.6.0
 	@-echo "  > Done"
+
+## configure-golangci: Configure install golangci app
+.PHONY: configure-golangci
+configure-golangci:
+	@-echo "  > Downloading golangci-lint..."
+	@${GO_INSTALL} github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.1
+	@-echo "  > Done"
+
+## configure-with-cli: Configure project with cli apps dependent
+.PHONY: configure-with-cli
+configure-with-cli: configure configure-swag configure-ginkgo configure-mockgen configure-golangci
+
+## lint: Run golang linter
+.PHONY: 
+lint:
+	@-echo "  > Run golang linter...\n"
+	@golangci-lint run
+
+## testing: Run automation test with ginkgo
+.PHONY: 
+testing:
+	@-echo "  > Run ginkgo test...\n"
+	@export APP_PATH=${APP_PATH}
+	@ginkgo -r --randomize-all --randomize-suites --fail-on-pending --cover
 
 ## serve: Run server in development mode
 .PHONY: serve
@@ -142,15 +181,15 @@ serve: --dev-build ${DEBUG_ENV_FILES}
 
 ## serve-with-doc: Run server in development mode with the swagger doc
 .PHONY: serve-with-doc
-serve-with-doc: --dev-build ${DEBUG_ENV_FILES}
-	@-echo "  > Generate API Documentation...\n"
-	@swag init -d ./cmd,./ --parseInternal --pd
-	@-echo "  > Starting Server...\n"
-	@LOG_LEVEL=debug;LOG_FORMAT=console; ${DEBUG_BIN} -dir=${PROJECT_ROOT} -load-env-file
+serve-with-doc: --swagger-build serve
+
+## release-dev: Run server in development mode with the swagger doc
+.PHONY: release-dev
+release-dev: --swagger-build --release-dev-build ${DEBUG_ENV_FILES}
 
 ## vendor: Download dependencies to vendor folder
 vendor: go.mod
-	@-echo "  > Vendoring... - ${GOPRIVATE}"
+	@-echo "  > Vendoring... -"
 	@${GO_MOD} vendor
 	@-echo "  > Vendoring: Done"
 
@@ -251,6 +290,21 @@ db-clean: --clean-prompt
 	@${GO_BUILD} -ldflags "-X main.AppVersion=local -X main.BuildHash=${CI_COMMIT_SHA}" \
 		-o ${DEBUG_BIN} ${PROJECT_ROOT}/${PROJECT_MAIN_PKG}
 	@-echo "  > Output: ${DEBUG_BIN}"
+
+
+.PHONY: --release-dev-build
+--release-dev-build:
+	@-echo "  > Compiling..."
+	@CGO_ENABLED=0 GOOS=linux ${GO_BUILD} -ldflags "-X main.AppVersion=dev -X main.BuildHash=${CI_COMMIT_SHA}" \
+		-o ${DEBUG_BIN} ${PROJECT_ROOT}/${PROJECT_MAIN_PKG}
+	@-echo "  > Output: ${DEBUG_BIN}"
+
+.PHONY: --swagger-build
+--swagger-build:
+	@-echo "  > Build swagger..."
+	@-echo "  > Generate API Documentation...\n"
+	@swag init -d ./cmd,./ --parseInternal --pd
+	@-echo "  > Done"
 
 .PHONY: --clean-prompt
 --clean-prompt:

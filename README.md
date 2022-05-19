@@ -42,11 +42,46 @@ Initialize project for Go Boiler Plate Service
 
 ## Configuration
 
-PDS service are configurable from `.env` file
+   PDS service are configurable from `.env` file
 
 ### Run Development
 
-```sh
-# Run Service
-make serve
-```
+   ```sh
+   # Run Service
+   make serve
+   ```
+
+### Make command available
+   ```sh
+   # Run make help
+
+   Choose a command run in Go Boilerplate Service:
+
+   help                 Show command help
+   clean                Clean everything
+   doctor               Check for prerequisites
+   setup                Make env from env example and grant permission.
+   configure            Configure project
+   configure-swag       Configure install swag app
+   configure-ginkgo     Configure install ginkgo app
+   configure-mockgen    Configure install mockgen app
+   configure-golangci   Configure install golangci app
+   configure-with-cli   Configure project with cli apps dependent
+   lint                 Run golang linter
+   testing              Run automation test with ginkgo
+   serve                Run server in development mode
+   serve-with-doc       Run server in development mode with the swagger doc
+   release-dev          Run server in development mode with the swagger doc
+   vendor               Download dependencies to vendor folder
+   release              Compile binary for deployment.
+   image                Build a docker image from release
+   image-push           Push app image
+   docker-serve         Run application with docker compose
+   db-configure         Generate a configuration for database migration tool
+   db-status            Prints the details and status information about all the migration.
+   db-generate          create a new migration file version
+   db-up                Upgrade database
+   db-down              (Experimental) undo to previous migration version
+   db-clean             Clean database
+
+   ```

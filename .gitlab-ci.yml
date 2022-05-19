@@ -5,30 +5,29 @@ stages:
   - deploy
 
 variables:
-  DOCKER_AUTH_CONFIG: '{"auths": {"artifactory.pegadaian.co.id:8084": {"auth": "$DOCKER_AU_CONFIG"},"artifactory.pegadaian.co.id:5443": {"auth": "$DOCKER_AU_CONFIG"}}}'
   IMAGE_URL: artifactory.pegadaian.co.id:5443/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG
-  OPENSHIFT_REGION: sby
+  OPENSHIFT_REGION: jkt
   OPENSHIFT_OC_URL: https://api.ocp-$OPENSHIFT_REGION.pegadaian.co.id:6443
 
-# A hack to make Golang-in-Gitlab happy
-.anchors:
-  - &inject-gopath
-      export GO111MODULE=on
-      && export PATH="$PATH:/go/bin"
-      && export GOPRIVATE="https://artifactory.pegadaian.co.id/repository/go-group-01/"
-      && export GOPROXY="https://artifactory.pegadaian.co.id/repository/go-group-01/"
-      && export GONOSUMDB="github.com/*,golang.org/*,gopkg.in/*,gitlab.com/*,cloud.google.com/*,go.*,google.golang.org/*,gotest.*,honnef.co/*,mellium.im/*"
-      && cp ${ARTIFACTORY_SSL_CERT} /usr/local/share/ca-certificates/ssl_certificate.crt
-      && chmod 644 /usr/local/share/ca-certificates/ssl_certificate.crt && update-ca-certificates
+.init: &init
+  before_script:
+    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/data/ssl_certificate.crt
+    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
+    - export GOPRIVATE="repo.pegadaian.co.id,artifactory.pegadaian.co.id/repository/go-group-01"
+    - export GOPROXY="https://artifactory.pegadaian.co.id/repository/go-group-01/"
+    - export GONOSUMDB="github.com/*,golang.org/*,gopkg.in/*,gitlab.com/*,cloud.google.com/*,go.*,google.golang.org/*,gotest.*,honnef.co/*,mellium.im/*"
 
-lint:
+linter:
+  stage: lint
   image:
     name: artifactory.pegadaian.co.id:8084/golangci/golangci-lint:v1.42.1
     entrypoint: [""]
-  stage: lint
-  before_script:
-    - *inject-gopath
+  <<: *init
   script:
+    - cp ${CI_PROJECT_DIR}/data/ssl_certificate.crt /usr/local/share/ca-certificates/ssl_certificate.crt
+    - chmod 644 /usr/local/share/ca-certificates/ssl_certificate.crt && update-ca-certificates
+    - cp config/.netrc ~/.netrc
+    - chmod 600 ~/.netrc
     - go mod download
     - golangci-lint run
   only:
@@ -39,13 +38,13 @@ test:
   image: artifactory.pegadaian.co.id:8084/docker/compose:1.29.2
   services:
     - artifactory.pegadaian.co.id:8084/docker:dind
+  <<: *init
   script:
-    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/data/ssl_certificate.crt
+    - touch .env.test && touch .env
     - cp ${APP_ENV} .env.test && cp ${APP_ENV} .env
-    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
     - docker-compose build test_app
     - docker-compose up test_app
-    - export TEST_STATUS=$(docker inspect test_app --format='{{.State.ExitCode}}')
+    - export TEST_STATUS=$(docker inspect go-boiler-plate-test-app --format='{{.State.ExitCode}}')
     - eval "[[ "$TEST_STATUS" == "1" ]] && exit 1 || exit 0"
   only:
     - merge_requests
@@ -56,15 +55,10 @@ build:
   services:
     - name: artifactory.pegadaian.co.id:8084/docker:dind
       command: [ "--insecure-registry=artifactory.pegadaian.co.id:8084" ]
+  <<: *init
   script:
-    # Copy secret files
-    - cp ${ARTIFACTORY_SSL_CERT} ${CI_PROJECT_DIR}/data/ssl_certificate.crt
-    # Compile and Build Image
-    - mkdir -p ~/.docker/ && echo $DOCKER_AUTH_CONFIG > ~/.docker/config.json
-    - docker build -t ${IMAGE_URL} --progress plain -f ${CI_PROJECT_DIR}/deployment/Dockerfile .
-    # Push image
+    - docker build -t ${IMAGE_URL} --progress plain -f ${CI_PROJECT_DIR}/deployment/dev.Dockerfile .
     - echo "  > Push image to Container Registry..."
-    - docker login -u $NEXUS_DOCKER_USER -p $NEXUS_DOCKER_PASS artifactory.pegadaian.co.id:5443
     - docker push $IMAGE_URL
     - echo "  > Done..."
   only:
@@ -75,6 +69,6 @@ deploy_dev:
   stage: deploy
   script:
     - while true; do result=0; oc login -u $OC_USER -p $OC_PASS --server=$OPENSHIFT_OC_URL --insecure-skip-tls-verify || result=$?; tj=$((tj+1)); if [ $result -eq 0 ]; then break; elif [ $tj -gt 5 ]; then exit 1; fi; echo "retry $tj";done;
-    - oc rollout latest dc/srv-customer
+    - oc rollout latest dc/go-boiler-plate
   only:
     - master
