@@ -8,19 +8,30 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
 
   db_test:
+    container_name: go-boiler-plate-db-test
     image: artifactory.pegadaian.co.id:8084/postgres:9.6-alpine
     ports:
-      - 54321:5432
+      - 5433:5432
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
 
   test_app:
+    container_name: go-boiler-plate-test-app
     build:
       context: ./
-      dockerfile: test.Dockerfile
+      dockerfile: deployment/test.Dockerfile
     env_file: .env.test
     depends_on:
       - db_test
+
+  dev_app:
+    build:
+      context: ./
+      dockerfile: deployment/dev.Dockerfile
+    ports:
+      - 8081:8081
+    env_file:
+      - .env
 
   app:
     build:

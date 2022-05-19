@@ -45,8 +45,15 @@ func NewDb(dbArgs ...Db) *Db {
 		}
 	}
 
-	postgresUrl := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
-		db.Username, db.Password, db.Host, db.Port, db.Name)
+	postgresUrl := fmt.Sprintf("user=%s host=%s dbname=%s sslmode=disable", db.Username, db.Host, db.Name)
+
+	if db.Password != "" {
+		postgresUrl += fmt.Sprintf(" password=%s", db.Password)
+	}
+
+	if db.Port != "" {
+		postgresUrl += fmt.Sprintf(" port=%s", db.Port)
+	}
 
 	sqlx, err := sqlx.Connect("postgres", postgresUrl)
 

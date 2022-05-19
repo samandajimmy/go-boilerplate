@@ -31,6 +31,9 @@ COPY .git ./.git
 COPY script ./script
 COPY config ./config
 
+# download package dependencies
+RUN make setup && make configure && make configure-swag
+
 # copy source code
 COPY cmd ./cmd
 COPY internal ./internal
@@ -38,7 +41,7 @@ COPY docs ./docs
 COPY migration ./migration
 
 # Compiling...
-RUN make release
+RUN make release-dev
 
 # ------------
 # Deploy Stage
@@ -51,10 +54,10 @@ WORKDIR /usr/src/app
 
 RUN apk add --no-cache tzdata ca-certificates
 
-COPY --from=builder /usr/src/app/bin/release /usr/src/app
+COPY --from=builder /usr/src/app/bin/debug /usr/src/app
 COPY --from=builder /usr/src/app/docs /usr/src/app/docs
 COPY --from=builder /usr/src/app/migration /usr/src/app/migration
 
 EXPOSE ${ARG_PORT}
 
-ENTRYPOINT ["./go-boiler-plate"]
+ENTRYPOINT ["./go-boiler-plate", "-dir=/usr/src/app"]
