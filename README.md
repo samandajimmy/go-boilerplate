@@ -1,10 +1,11 @@
 ## Go Boiler Plate Service
 
 Initialize project for Go Boiler Plate Service
+this boilerplate is made based on [Golang Standard Project Layout](https://github.com/golang-standards/project-layout)
 
 ## Prerequisites
 
-1. Go 1.16
+1. Go 1.17
 2. PostgreSQL 11
 3. UNIX Shell
    > Use `wsl` in Windows 10

@@ -43,7 +43,7 @@ test:
     - touch .env.test && touch .env
     - cp ${APP_ENV} .env.test && cp ${APP_ENV} .env
     - docker-compose build test_app
-    - docker-compose up test_app
+    - docker-compose up --force-recreate test_app
     - export TEST_STATUS=$(docker inspect go-boiler-plate-test-app --format='{{.State.ExitCode}}')
     - eval "[[ "$TEST_STATUS" == "1" ]] && exit 1 || exit 0"
   only:
@@ -69,6 +69,6 @@ deploy_dev:
   stage: deploy
   script:
     - while true; do result=0; oc login -u $OC_USER -p $OC_PASS --server=$OPENSHIFT_OC_URL --insecure-skip-tls-verify || result=$?; tj=$((tj+1)); if [ $result -eq 0 ]; then break; elif [ $tj -gt 5 ]; then exit 1; fi; echo "retry $tj";done;
-    - oc rollout latest dc/go-boiler-plate
+    - oc rollout latest dc/go-boiler-plate-$CI_COMMIT_REF_SLUG
   only:
     - master

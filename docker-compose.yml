@@ -11,7 +11,7 @@ services:
     container_name: go-boiler-plate-db-test
     image: artifactory.pegadaian.co.id:8084/postgres:9.6-alpine
     ports:
-      - 5433:5432
+      - 5433:5432 # you need to change this into `{unique port}:5432`
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
 
