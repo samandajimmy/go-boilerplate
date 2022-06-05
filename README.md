@@ -12,6 +12,13 @@ this boilerplate is made based on [Golang Standard Project Layout](https://githu
 4. Git
 5. Make
 6. Docker CE (Optional)
+7. Make sure you go install configured
+   ```
+   export GOROOT=/usr/local/go
+   export GOPATH=$HOME/go
+   export GOBIN=$GOPATH/bin
+   export PATH=$PATH:$GOPATH/bin
+   ```
 
 ## Set-up
 
