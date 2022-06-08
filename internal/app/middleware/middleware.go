@@ -13,8 +13,8 @@ import (
 
 	"gopkg.in/go-playground/validator.v9"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
-	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
+	"github.com/samandajimmy/pgdlogger"
+	"github.com/samandajimmy/pgdutil"
 )
 
 type CustomValidator struct {

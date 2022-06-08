@@ -1,16 +1,12 @@
 # -----------
 # Build Stage
 # -----------
-FROM artifactory.pegadaian.co.id:8084/golang:1.17 as builder
+FROM golang:1.17 as builder
 
 # add golang env
-ENV GOPRIVATE="repo.pegadaian.co.id,artifactory.pegadaian.co.id/repository/go-group-01"
-ENV GOPROXY="https://artifactory.pegadaian.co.id/repository/go-group-01/"
-ENV GONOSUMDB="github.com/*,golang.org/*,gopkg.in/*,gitlab.com/*,cloud.google.com/*,go.*,google.golang.org/*,gotest.*,honnef.co/*,mellium.im/*"
-
-# add ssl certificate
-ADD data/ssl_certificate.crt /usr/local/share/ca-certificates/ssl_certificate.crt
-RUN chmod 644 /usr/local/share/ca-certificates/ssl_certificate.crt && update-ca-certificates
+ENV GOPRIVATE="github.com/samandajimmy/*"
+ENV GOPROXY=""
+ENV GONOSUMDB=""
 
 # copy netrc configuration
 COPY config/.netrc /root/.netrc
@@ -46,7 +42,7 @@ RUN make release-dev
 # ------------
 # Deploy Stage
 # ------------
-FROM artifactory.pegadaian.co.id:8084/alpine:3.15
+FROM alpine:3.15
 
 ARG ARG_PORT=3000
 

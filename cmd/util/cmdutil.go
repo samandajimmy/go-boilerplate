@@ -6,25 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/samandajimmy/pgdlogger"
 	"github.com/spf13/viper"
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
 )
 
 type EchoGroup struct {
 	Api   *echo.Group
 	Token *echo.Group
-}
-
-func LoadEnv() {
-	envPath := ".env"
-
-	if os.Getenv(`APP_PATH`) != "" {
-		envPath = os.Getenv(`APP_PATH`) + "/" + envPath
-	}
-
-	_ = godotenv.Load(envPath)
 }
 
 func LoadTestData() {

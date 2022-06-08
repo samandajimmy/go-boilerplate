@@ -1,4 +1,4 @@
-## Go Boiler Plate Service
+# Go Boiler Plate Service
 
 Initialize project for Go Boiler Plate Service
 this boilerplate is made based on [Golang Standard Project Layout](https://github.com/golang-standards/project-layout)
@@ -13,7 +13,8 @@ this boilerplate is made based on [Golang Standard Project Layout](https://githu
 5. Make
 6. Docker CE (Optional)
 7. Make sure you go install configured
-   ```
+
+   ```text
    export GOROOT=/usr/local/go
    export GOPATH=$HOME/go
    export GOBIN=$GOPATH/bin
@@ -38,9 +39,10 @@ this boilerplate is made based on [Golang Standard Project Layout](https://githu
 2. Configure project. see [Configuration Section](#Configuration) for details:
 
 3. Init Database
+   Once config file has been configured, initiate database:
 
-   Once `.env` has been configured, initiate database:
    ```bash
+
    # Create database if not exists
    make db
    
@@ -50,46 +52,48 @@ this boilerplate is made based on [Golang Standard Project Layout](https://githu
 
 ## Configuration
 
-   PDS service are configurable from `.env` file
+   PDS service is by default configurable from `.env` file
+   but you can set the config file differently by using environment variable `APP_ENV`
+   then it will set into `.env.${APP_ENV}`
 
-### Run Development
+## Run Development
 
    ```sh
    # Run Service
    make serve
    ```
 
-### Make command available
-   ```sh
-   # Run make help
+## Make command available
 
-   Choose a command run in Go Boilerplate Service:
+```sh
+# Run make help
 
-   help                 Show command help
-   clean                Clean everything
-   doctor               Check for prerequisites
-   setup                Make env from env example and grant permission.
-   configure            Configure project
-   configure-swag       Configure install swag app
-   configure-ginkgo     Configure install ginkgo app
-   configure-mockgen    Configure install mockgen app
-   configure-golangci   Configure install golangci app
-   configure-with-cli   Configure project with cli apps dependent
-   lint                 Run golang linter
-   testing              Run automation test with ginkgo
-   serve                Run server in development mode
-   serve-with-doc       Run server in development mode with the swagger doc
-   release-dev          Run server in development mode with the swagger doc
-   vendor               Download dependencies to vendor folder
-   release              Compile binary for deployment.
-   image                Build a docker image from release
-   image-push           Push app image
-   docker-serve         Run application with docker compose
-   db-configure         Generate a configuration for database migration tool
-   db-status            Prints the details and status information about all the migration.
-   db-generate          create a new migration file version
-   db-up                Upgrade database
-   db-down              (Experimental) undo to previous migration version
-   db-clean             Clean database
+Choose a command run in Go Boilerplate Service:
 
-   ```
+help                 Show command help
+clean                Clean everything
+doctor               Check for prerequisites
+setup                Make env from env example and grant permission.
+configure            Configure project
+configure-swag       Configure install swag app
+configure-ginkgo     Configure install ginkgo app
+configure-mockgen    Configure install mockgen app
+configure-golangci   Configure install golangci app
+configure-with-cli   Configure project with cli apps dependent
+lint                 Run golang linter
+testing              Run automation test with ginkgo
+serve                Run server in development mode
+serve-with-doc       Run server in development mode with the swagger doc
+release-dev          Run server in development mode with the swagger doc
+vendor               Download dependencies to vendor folder
+release              Compile binary for deployment.
+image                Build a docker image from release
+image-push           Push app image
+docker-serve         Run application with docker compose
+db-configure         Generate a configuration for database migration tool
+db-status            Prints the details and status information about all the migration.
+db-generate          create a new migration file version
+db-up                Upgrade database
+db-down              (Experimental) undo to previous migration version
+db-clean             Clean database
+```

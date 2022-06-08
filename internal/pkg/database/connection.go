@@ -13,7 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+	"github.com/samandajimmy/pgdlogger"
 )
 
 type Db struct {

@@ -40,8 +40,8 @@ test:
     - artifactory.pegadaian.co.id:8084/docker:dind
   <<: *init
   script:
-    - touch .env.test && touch .env
-    - cp ${APP_ENV} .env.test && cp ${APP_ENV} .env
+    - touch .env
+    - cp ${APP_ENV} .env
     - docker-compose build test_app
     - docker-compose up --force-recreate test_app
     - export TEST_STATUS=$(docker inspect go-boiler-plate-test-app --format='{{.State.ExitCode}}')

@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
+	"github.com/samandajimmy/pgdutil"
 )
 
 type TokenUsecase struct {

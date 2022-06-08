@@ -13,8 +13,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
-	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
+	"github.com/samandajimmy/pgdlogger"
+	"github.com/samandajimmy/pgdutil"
 )
 
 type psqlTokenRepository struct {

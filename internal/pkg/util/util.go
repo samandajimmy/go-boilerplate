@@ -1,8 +1,8 @@
 package util
 
 import (
+	"github.com/samandajimmy/pgdlogger"
 	"golang.org/x/crypto/bcrypt"
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
 )
 
 type IUtil interface {

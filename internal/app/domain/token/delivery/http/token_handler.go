@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
+	"github.com/samandajimmy/pgdutil"
 )
 
 type TokenHandler struct {

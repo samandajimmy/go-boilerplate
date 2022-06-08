@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdutil"
+	"github.com/samandajimmy/pgdutil"
 )
 
 var (
@@ -29,7 +29,6 @@ var (
 	handler      tokenhttp.TokenHandler
 
 	_ = BeforeSuite(func() {
-		cmdutil.LoadEnv()
 		cmdutil.LoadTestData()
 		db, migrator = test.NewTestDb()
 	})

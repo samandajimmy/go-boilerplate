@@ -1,7 +1,7 @@
 version: '3'
 services:
   db:
-    image: artifactory.pegadaian.co.id:8084/postgres:9.6-alpine
+    image: postgres:9.6-alpine
     ports:
       - 5432:5432
     environment:
@@ -9,7 +9,7 @@ services:
 
   db_test:
     container_name: go-boiler-plate-db-test
-    image: artifactory.pegadaian.co.id:8084/postgres:9.6-alpine
+    image: postgres:9.6-alpine
     ports:
       - 5433:5432 # you need to change this into `{unique port}:5432`
     environment:
@@ -31,7 +31,9 @@ services:
     ports:
       - 8081:8081
     env_file:
-      - .env
+      - .env.development
+    depends_on:
+      - db
 
   app:
     build:
@@ -41,3 +43,5 @@ services:
       - 8080:8080
     env_file:
       - .env
+    depends_on:
+      - db

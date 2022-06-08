@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go-boiler-plate/cmd/router"
-	cmdutil "go-boiler-plate/cmd/util"
 	"go-boiler-plate/docs"
 	"go-boiler-plate/internal/app/middleware"
 	"go-boiler-plate/internal/pkg/database"
@@ -14,7 +13,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"repo.pegadaian.co.id/ms-pds/modules/pgdlogger"
+	"github.com/samandajimmy/pgdlogger"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
@@ -22,7 +21,6 @@ import (
 func init() {
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	time.Local = loc
-	cmdutil.LoadEnv()
 	pgdlogger.Init(os.Getenv(`APP_LOG_LEVEL`))
 }
 

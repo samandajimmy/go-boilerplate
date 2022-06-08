@@ -12,12 +12,13 @@ BINARY_NAME:=go-boiler-plate
 PROJECT_ROOT?=$(shell pwd)
 PROJECT_WORKDIR?=${PROJECT_ROOT}
 PROJECT_CONFIG:=.env
-PROJECT_CONFIG_RELEASE:=.env
+ifneq ($(APP_ENV), $(""))
+PROJECT_CONFIG:=${PROJECT_CONFIG}.${APP_ENV}
+endif
 PROJECT_WEB_TEMPLATES=web/templates
 PROJECT_WEB_STATIC=web/static
 PROJECT_MAIN_PKG=cmd
 PROJECT_ENV_FILES:=$(addprefix ${PROJECT_ROOT}/,${PROJECT_CONFIG} ${PROJECT_RESPONSES})
-PROJECT_ENV_FILES_RELEASE:=$(addprefix ${PROJECT_ROOT}/,${PROJECT_CONFIG_RELEASE} ${PROJECT_RESPONSES})
 PROJECT_DOCKERFILE_DIR?=${PROJECT_ROOT}/deployment
 APP_PATH=${PROJECT_ROOT}
 OUTPUT_DIR:=${PROJECT_ROOT}/bin
@@ -76,6 +77,7 @@ CI_COMMIT_SHA?=$$(git rev-parse HEAD)
 # Initialize CLI environment
 -include ${PROJECT_ROOT}/${PROJECT_CONFIG}
 export
+export APP_PATH=${PROJECT_ROOT}
 
 # Initialize DB configuration
 MIGRATION_URL := "postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable"
@@ -114,12 +116,7 @@ doctor: $(DOCTOR_CMD)
 
 ## setup: Make env from env example and grant permission.
 .PHONY: setup
-setup:
-	@-echo "  > Creating env file..."
-	@cp config/.env.sample .env
-	@cp config/.env.sample .env.test
-	@-echo "  > Fix script permission..."
-	@chmod +x script/*.sh
+setup: --copy-env --permit-exec
 
 ## configure: Configure project
 .PHONY: configure
@@ -170,7 +167,6 @@ lint:
 .PHONY: 
 testing:
 	@-echo "  > Run ginkgo test...\n"
-	@export APP_PATH=${APP_PATH}
 	@ginkgo -r --randomize-all --randomize-suites --fail-on-pending --cover
 
 ## serve: Run server in development mode
@@ -195,7 +191,7 @@ vendor: go.mod
 
 ## release: Compile binary for deployment.
 .PHONY: release
-release: vendor
+release: --clean-release vendor
 	@-echo "  > Compiling for release..."
 	@-echo "  >   Version: ${CI_COMMIT_TAG}"
 	@-echo "  >   CommitHash: ${CI_COMMIT_SHA}"
@@ -272,7 +268,9 @@ db-clean: --clean-prompt
 .PHONY: --copy-env
 --copy-env:
 	@-echo "  > Copy .env (did not overwrite existing file)..."
-	@-cp -n $(PROJECT_ROOT)/config/.env.sample $(PROJECT_CONFIG)
+	@cp $(PROJECT_ROOT)/config/.env.sample .env
+	@cp $(PROJECT_ROOT)/config/.env.sample .env.development
+	@cp $(PROJECT_ROOT)/config/.env.sample .env.test
 
 .PHONY: --permit-exec
 --permit-exec: $(shell find $(SCRIPTS_DIR) -type f -name "*.sh")
